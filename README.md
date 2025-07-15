@@ -259,6 +259,49 @@ The model typically achieves:
 
 ## 🛠️ Customization
 
+### Model Architecture Changes
+
+#### Switching Between RNN and GRU Models
+
+The project includes both vanilla RNN and GRU implementations. You can easily switch between them:
+
+**Using Vanilla RNN (Default):**
+
+```python
+from models import RNN
+model = RNN(input_size=57, hidden_size=256, output_size=18)
+```
+
+**Using GRU Model:**
+
+```python
+from models import GRUModel
+model = GRUModel(
+    num_layers=1,       # Number of GRU layers
+    input_size=57,      # Character vocabulary size
+    hidden_size=256,    # Hidden state dimension
+    output_size=18      # Number of language classes
+)
+```
+
+**Performance Comparison:**
+
+- **RNN**: Simpler, faster training, good baseline performance
+- **GRU**: Better at capturing long-term dependencies, may achieve higher accuracy
+- **Recommendation**: Start with RNN, then try GRU if you need better performance
+
+#### Multi-layer GRU Configuration
+
+```python
+# Deeper GRU model for better performance
+model = GRUModel(
+    num_layers=2,       # Add more layers for complexity
+    input_size=57,
+    hidden_size=256,
+    output_size=18
+)
+```
+
 ### Hyperparameter Tuning
 
 ```python
@@ -274,17 +317,71 @@ optimizer = optim.Adam(model.parameters(), lr=0.0005)  # Lower learning rate
 train(model, train_loader, criterion, optimizer, num_epochs=10)  # More epochs
 ```
 
+### Training Configuration Changes
+
+#### Adjusting Training Parameters
+
+```python
+# In main.py, modify these parameters:
+
+# Training epochs
+train(model, train_loader, criterion, optimizer, num_epochs=5)  # More epochs
+
+# Learning rate options
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)     # Default
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)    # Lower LR
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01)       # SGD optimizer
+
+# Different loss functions
+criterion = nn.CrossEntropyLoss()              # Default
+criterion = nn.NLLLoss()                       # Negative log likelihood
+criterion = nn.CrossEntropyLoss(weight=weights) # Weighted for imbalanced data
+```
+
+#### Batch Processing (Optional Enhancement)
+
+```python
+# For larger datasets, consider adding batch processing
+from torch.utils.data import DataLoader, TensorDataset
+
+def create_dataloader(dataset, batch_size=32):
+    # Convert to tensors and create DataLoader
+    inputs, labels = zip(*dataset)
+    dataset = TensorDataset(torch.stack(inputs), torch.stack(labels))
+    return DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+# Usage
+train_loader = create_dataloader(train_dataset, batch_size=64)
+```
+
 ### Adding New Languages
 
 1. Add a new `.txt` file with names in `data/names/`
 2. Update the model's `output_size` parameter
 3. Retrain the model
 
-### Using GRU Instead of RNN
+### Model Comparison Script
 
 ```python
-from models import GRU
-model = GRU(input_size=57, hidden_size=256, output_size=18)
+# Compare RNN vs GRU performance
+def compare_models():
+    # Load data
+    train_loader, val_loader = split_dataset("./data/names")
+
+    # Test RNN
+    rnn_model = RNN(input_size=57, hidden_size=256, output_size=18)
+    train(rnn_model, train_loader, criterion, optimizer, num_epochs=3)
+    print("RNN Results:")
+    evaluate(rnn_model, val_loader)
+
+    # Test GRU
+    gru_model = GRUModel(num_layers=1, input_size=57, hidden_size=256, output_size=18)
+    train(gru_model, train_loader, criterion, optimizer, num_epochs=3)
+    print("GRU Results:")
+    evaluate(gru_model, val_loader)
+
+# Run comparison
+compare_models()
 ```
 
 ## 🤝 Contributing

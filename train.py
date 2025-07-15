@@ -20,6 +20,19 @@ def train(model, train_dataset, criterion, optimizer, num_epochs, print_every=10
             if (i + 1) % print_every == 0:
                 print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_dataset)}], Loss: {loss.item():.4f}')
 
+def train_GRU(model, train_dataset, criterion, optimizer, num_epochs, print_every=1000):
+    random.shuffle(train_dataset)
+    model.train()
+    for epoch in range(num_epochs):
+        for i, (inputs, targets) in enumerate(train_dataset):
+            optimizer.zero_grad()
+            x, hidden = model(inputs)
+            loss = criterion(x, targets)
+            loss.backward()
+            optimizer.step()
+            if (i + 1) % print_every == 0:
+                print(f'Epoch [{epoch+1}/{num_epochs}], Step [{i+1}/{len(train_dataset)}], Loss: {loss.item():.4f}')
+
 def evaluate(model, test_dataset):
     num_correct = 0
     num_samples = len(test_dataset)
@@ -30,6 +43,17 @@ def evaluate(model, test_dataset):
             for x in inputs:
                 hidden_state, output = model(x, hidden_state)
             _, predicted = torch.max(output, 1)
+            num_correct += bool(predicted == targets)
+    print(f'Test Accuracy: {num_correct / num_samples:.4f}')
+
+def evaluate_GRU(model, test_dataset):
+    num_correct = 0
+    num_samples = len(test_dataset)
+    model.eval()
+    with torch.no_grad():
+        for inputs, targets in test_dataset:
+            x, hidden = model(inputs)
+            _, predicted = torch.max(x, 1)
             num_correct += bool(predicted == targets)
     print(f'Test Accuracy: {num_correct / num_samples:.4f}')
 
